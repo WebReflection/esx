@@ -17,55 +17,16 @@ import {escape} from 'html-escaper';
 
 function basicHTML(esx, output = []) {
   switch (esx.type) {
-    case ESXToken.TEMPLATE_TYPE:
-      return basicHTML(esx.value, output);
-    case ESXToken.COMPONENT_TYPE:
-      let properties = null;
-      if (esx.properties) {
-        properties = {};
-        for (const {type, name, value} of esx.properties.value) {
-          if (type === ESXToken.STATIC_TYPE || name.length)
-            properties[name] = value;
-          else
-            Object.assign(properties, value);
-        }
-      }
-      return basicHTML(esx.value(properties, ...esx.children), output);
-    case ESXToken.FRAGMENT_TYPE:
+    case ESXToken.COMPONENT:
+      return basicHTML(esx.value(esx.properties, ...esx.children), output);
+    case ESXToken.FRAGMENT:
       addChildren(output, esx);
       break;
-    case ESXToken.ELEMENT_TYPE:
+    case ESXToken.ELEMENT:
       output.push('<', esx.value);
-      if (esx.properties) {
-        switch (esx.properties.type) {
-          case ESXToken.STATIC_TYPE:
-            for (const {name, value} of esx.properties.value)
-              addAttribute(output, name, value);
-            break;
-          case ESXToken.MIXED_TYPE:
-            for (const {type, name, value} of esx.properties.value) {
-              if (type === ESXToken.RUNTIME_TYPE && typeof value === 'function')
-                continue;
-              addAttribute(output, name, value);
-            }
-            break;
-          case ESXToken.RUNTIME_TYPE:
-            const attributes = new Map;
-            for (const {type, name, value} of esx.properties.value) {
-              if (type === ESXToken.STATIC_TYPE || (name.length && typeof value !== 'function'))
-                attributes.set(name, value);
-              else if (name.length === 0) {
-                for (const [name, v] of Object.entries(value)) {
-                  if (typeof v === 'function')
-                    continue;
-                  attributes.set(name, v);
-                }
-              }
-            }
-            for (const [name, value] of attributes)
-              addAttribute(output, name, value);
-            break;
-        }
+      for (const [name, value] of Object.entries(esx.properties || {})) {
+        if (typeof value !== 'function')
+          addAttribute(output, name, value);
       }
       output.push('>');
       addChildren(output, esx);
@@ -80,10 +41,21 @@ function addAttribute(output, name, value) {
 }
 
 function addChildren(output, {children}) {
-  for (const {value} of children) {
-    if (value instanceof ESXToken)
-      basicHTML(value, output);
-    else if (typeof value !== 'function')
-      output.push(escape(value));
+  for (const child of children) {
+    const {type, value} = child;
+    switch (type) {
+      case ESXToken.STATIC:
+        output.push(escape(value));
+        break;
+      case ESXToken.INTERPOLATION:
+        if (value instanceof ESXToken)
+          basicHTML(value, output);
+        else
+          output.push(escape(value));
+        break;
+      default:
+        basicHTML(child, output);
+        break;
+    }
   }
 }
