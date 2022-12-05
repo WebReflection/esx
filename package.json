@@ -12,7 +12,7 @@
   "devDependencies": {
     "@babel/cli": "^7.19.3",
     "@babel/core": "^7.20.5",
-    "@ungap/babel-plugin-transform-esx": "^0.2.0",
+    "@ungap/babel-plugin-transform-esx": "^0.3.0",
     "html-escaper": "^3.0.3"
   },
   "module": "./esm/index.js",
@@ -24,6 +24,6 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@ungap/esxtoken": "^0.2.2"
+    "@ungap/esxtoken": "^0.3.0"
   }
 }
